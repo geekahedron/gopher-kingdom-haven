@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
-// @version	0.0.2a
+// @version	0.0.3a
 // @description	Auto-join script for 2015 Summer Steam Monster Minigame
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
@@ -14,10 +14,10 @@
 
 
 window.onload = function() {
+    insertInfoBox();
 };
 
 $(document).ready = function() {
-    insertInfoBox();
 };
 
 var currentSection = window.location.pathname.split("/")[2];
@@ -25,6 +25,10 @@ var currentPage = window.location.pathname.split("/")[3];
 
 var xmlhttp;
 var content;
+
+/**************************** 
+ *    PAGE MANIPULATION     *
+ ****************************/
 
 function removeAds() {
     $("div#left-column").children()[0].remove();
@@ -50,8 +54,16 @@ function insertInfoBox() {
     var infobox = document.createElement("div");
     infobox.id = "infobox";
     infobox.className = "infobox";
+    var pagetitle = document.createElement("h2");
+    pagetitle.innerHTML = getPageName(currentPage);
+    infobox.appendChild(pagetitle);
     res.after(infobox);
 }
+
+
+/**************************** 
+ *   PAGE READ FUNCTIONS    *
+ ****************************/
 
 function loadSpells() {
     getContent("council_spells", function(c) {
@@ -101,7 +113,7 @@ function logKingdom(k, i) {
 }
 
 /**************************** 
- *    UTILITY FUNCTIONS     *
+ *   PAGE LOAD FUNCTIONS    *
  ****************************/
 
 function loadXMLDoc(url,cfunc)
