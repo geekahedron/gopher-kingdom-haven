@@ -14,14 +14,10 @@
 
 
 window.onload = function() {
-//    removeAds();
-//    logKingdom(5,12);
 };
 
 $(document).ready = function() {
     insertInfoBox();
-    
-//    showWanted();
 };
 
 var currentSection = window.location.pathname.split("/")[2];
@@ -54,7 +50,6 @@ function insertInfoBox() {
     var infobox = document.createElement("div");
     infobox.id = "infobox";
     infobox.className = "infobox";
-    infobox.innerText = "INFO BOX";
     res.after(infobox);
 }
 
