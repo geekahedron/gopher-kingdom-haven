@@ -2,7 +2,7 @@
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
 // @require http://code.jquery.com/jquery-latest.js
-// @version	0.0.4a
+// @version	0.0.5a
 // @description	Auto-join script for 2015 Summer Steam Monster Minigame
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
@@ -35,34 +35,21 @@ var prevMonth;
 var prevYear;
 
 function initialize() {
-    console.log("Initializing Gopher...");
+    console.log("Initializing Gopher");
     if (typeof localStorage['gopherstate'] === 'undefined') {
         state = {};
     } else {
         state = JSON.parse(localStorage['gopherstate']);
     }
+    createChild(state,'info');
+    createChild(state,'data');
     spells = {};
     kingdoms = {};
     
     currentSection = window.location.pathname.split("/")[2];
     currentPage = window.location.pathname.split("/")[3];
-    currentDate = $("div.current-date")[0].innerText.split(" ");
-    currentMonth = new Date(Date.parse(currentDate[0] +" 1, 2012")).getMonth()+1;
-    currentDay = Number(currentDate[1].split(",")[0]);
-    currentYear = Number(currentDate[2].substr(2));
-    prevDay = currentDay - 1;
-    prevMonth = currentMonth;
-    prevYear = currentYear;
-    if (prevDay === 0) {
-        prevDay = 24;
-        prevMonth -= 1;
-    }
-    if (prevMonth === 0) {
-        prevMonth = 12;
-        prevYear -= 1;
-    }
+    setCurrentDate($("div.current-date")[0].innerText);
 }
-
 
 /**************************** 
  *    PAGE MANIPULATION     *
@@ -94,10 +81,16 @@ function showWanted() {
 
 function insertGopherBox() {
     removeAds();
+    addGlobalStyle("#right-column { float: left; }");
+    addGlobalStyle("#right-column { width: 168px; }");
+    addGlobalStyle("#gopherbox { border: 2px solid #3B4041; }");
+    addGlobalStyle("#gopherbox { min-height: 300px; }");
+    addGlobalStyle("#gopherbox h2 { text-align: center; }");
     var gopherbox = document.createElement("div");
     gopherbox.id = "gopherbox";
     gopherbox.className = "gopherbox";
     var pagetitle = document.createElement("h2");
+    pagetitle.id = "gophertitle";
     pagetitle.innerHTML = "Gopher";
     gopherbox.appendChild(pagetitle);
     $("div#right-column")[0].appendChild(gopherbox);
@@ -107,11 +100,34 @@ function insertGopherBox() {
  *   PAGE READ FUNCTIONS    *
  ****************************/
 
-function createChild(container, key) {
-    if (typeof container[key] === 'undefined') {
-        container[key] = {};
-    }
+function loadNews() {
+    getContent("province_news", function(c) {
+        var newsdates = content.getElementsByClassName("news-incident-date");
+        var newsreports = content.getElementsByClassName("news-incident-report");
+
+        // clear the queue of existing news reports and repopulate the year
+        
+        //TODO:: THIS DOESN'T WORK WITH BACKGROUND LOADING
+        var navtext = $(".next-prev-nav").text().trim();
+        if (navtext.search("<") === 0) {  // remove the "prev" link text
+            navtext = navtext.substr(navtext.search("Edition")+8).trim();
+        }
+        navtext = navtext.substr(0,navtext.search("Edition")).trim();
+        var d = parseUtoDate(navtext);
+        createChild(state.data,d[2]);
+        createChild(state.data[d[2]],d[0]);
+        state.data[d[2]][d[0]] = {};
+
+        // read in news entries
+        for (var i; i < newsdates.length; i++) {
+            var d = parseUtoDate(newsdates[i].innerText.trim());
+            createDataEntry(d);
+            var report = newsreports[i].innerText.trim();
+        }
+    });
 }
+
+
 
 function loadState() {
     getContent("council_state", function(c) {
@@ -119,7 +135,6 @@ function loadState() {
         var statenumbers = c.children[2].children[1].children;
         var trendtable = c.children[4].children[1].children;
 
-        createChild(state,'info');
         state.info.pezzies = statenumbers[0].children[1].innerText;
         state.info.employed = statenumbers[0].children[3].innerText;
         state.info.nw = statenumbers[0].children[5].innerText;
@@ -137,21 +152,9 @@ function loadState() {
         state.info.maxpop = statenumbers[5].children[1].innerText;
         state.info.wages = statenumbers[5].children[3].innerText;
 
-        console.log("Current date: " + currentMonth + " " + currentDay + ", YR" + currentYear);
-        
-        console.log(1);
-        createChild(state,'data');
-        console.log(2);
-        createChild(state.data,currentYear);
-        console.log(3);
-        createChild(state.data[currentYear],currentMonth);
-        console.log(4);
-        createChild(state.data[currentYear][currentMonth],currentDay);
-        console.log(5);
+        //TODO::        createDataEntry(prevDate);
         createChild(state.data,prevYear);
-        console.log(6);
         createChild(state.data[prevYear],prevMonth);
-        console.log(7);
         createChild(state.data[prevYear][prevMonth],prevDay);
 
         state.data[prevYear][prevMonth][prevDay]["income"] = trendtable[0].children[1].innerText;
@@ -252,6 +255,53 @@ function logKingdom(k, i) {
  *   PAGE LOAD FUNCTIONS    *
  ****************************/
 
+function dateChange(oldDate) {
+    //! TODO: Update on-screen elements (date, header) after tick
+    $(".current-date")[0].innerText = currentDate[0] +" "+ currentDate[1] +" "+ currentDate[2];
+    $(".current-date")[0].className += " updated";
+    setResBar();
+    console.log("Date changed from " + oldDate[0] +" "+ oldDate[1] +" "+ oldDate[2] + " to " + currentDate[0] +" "+ currentDate[1] +" "+ currentDate[2]);
+}
+
+function setResBar() {
+    var res = state.data.resbar.children[1].children[0].children;
+    var bar = $("#resource-bar tbody th");
+    for (var i = 0; i < res.length; i++) {
+        var val = res[i].innerText;
+        var barval = bar[i].innerText;
+        if (val !== barval) {
+            console.log("Updating " + getResName(i) + " from " + barval + " to " + val);
+            bar[i].innerText = val;
+            bar[i].className = "updated";
+        }
+    }
+}
+
+function setCurrentDate(dateString) {
+    var oldDate = currentDate;
+    var currentDate = parseUtoDate(dateString);
+    
+    currentMonth = currentDate[0];
+    currentDay = currentDate[1];
+    currentYear = currentDate[2];
+
+    prevDay = currentDay - 1;
+    prevMonth = currentMonth;
+    prevYear = currentYear;
+    if (prevDay === 0) {
+        prevDay = 24;
+        prevMonth -= 1;
+    }
+    if (prevMonth === 0) {
+        prevMonth = 7;
+        prevYear -= 1;
+    }
+    if (JSON.stringify(oldDate) !== JSON.stringify(currentDate)) {
+        dateChange(oldDate);
+    }
+    createDataEntry(currentDate);
+}
+
 function loadXMLDoc(url,cfunc)
 {
     if (window.XMLHttpRequest)
@@ -271,15 +321,13 @@ function loadXMLDoc(url,cfunc)
 function parseContent(doc, cfunc) {
     console.log("parsing page");
     var htmlparse = new DOMParser();
-    var contentStart = doc.search("<div class=\"game-content\">");
-    var contentEnd = doc.search("<div id=\"right-column\">")
-    content = htmlparse.parseFromString(doc.substr(contentStart,contentEnd-contentStart)+"</form></div>","text/html");
-    var errors = content.children[0].children[0].innerHTML;
-    if (errors.length === 0) { // No errors found
-        cfunc(content.children[0].children[1].children[0]); // content div
-    } else {
-        console.log(errors);
-    }
+    var page = htmlparse.parseFromString(doc,"text/html").firstElementChild;
+    var content = page.getElementsByClassName("game-content")[0];
+
+    // While we're pulling a new page, may as well check the date and resources
+    state.data.resbar = page.getElementsByTagName("table")["resource-bar"];
+    setCurrentDate(page.getElementsByClassName("current-date")[0].innerText);
+
 }
 
 function getContent(page, cfunc) {
@@ -290,6 +338,7 @@ function getContent(page, cfunc) {
         var url = "/wol/game/" + page + "/";
         loadXMLDoc(url, function() {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                doc = xmlhttp.responseText;
                 parseContent(xmlhttp.responseText, cfunc);
             }
         });
@@ -299,7 +348,56 @@ function getContent(page, cfunc) {
 /**************************** 
  *    UTILITY FUNCTIONS     *
  ****************************/
+function createChild(container, key) {
+    if (typeof container[key] === 'undefined') {
+        container[key] = {};
+    }
+}
 
+function addGlobalStyle(css) {
+    var head, style;
+    head = document.getElementsByTagName('head')[0];
+    if (!head) { return; }
+    style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = css;
+    head.appendChild(style);
+}
+
+function num(str) {
+    return Number(str.replace(/[^\d\.\-\ ]/g, ''));
+}
+
+function parseUtoDate(str) {
+    var d = str.split(" ");
+    var r = [];
+    if (d.length === 2) { // "March YR1"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
+        r[1] = -1;
+        r[2] = Number(d[1].substr(2));
+    }
+    if (d.length === 3) { // "May 3, YR2"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
+        r[1] = Number(d[1].split(",")[0]);
+        r[2] = Number(d[2].substr(2));
+    } else if (d.length === 4) { // "May 4 of YR0"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
+        r[1] = Number(d[1].split(",")[0]);
+        r[2] = Number(d[3].substr(2));
+    }
+    return r;
+}
+
+function createDataEntry(d) {
+    // d is date array in form [m, d, y]
+    createChild(state.data,d[2]);
+    createChild(state.data[d[2]],d[0]);
+    createChild(state.data[d[2]][d[0]],d[1]);
+}
+
+/**************************** 
+ *      INFO FUNCTIONS      *
+ ****************************/
 function getPageName(page) {
     var names = [];
     names.throne = "Throne";
@@ -342,15 +440,10 @@ function getPageName(page) {
     return names[page];
 }
 
-function addGlobalStyle(css) {
-    var head, style;
-    head = document.getElementsByTagName('head')[0];
-    if (!head) { return; }
-    style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = css;
-    head.appendChild(style);
+function getResName(i) {
+    return ["money", "peasants", "food", "runes", "nw", "land", "nwpa"][i];
 }
+
 
 // Why wait for the page to finish loading crap?
 insertGopherBox();
