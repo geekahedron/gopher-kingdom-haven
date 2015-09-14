@@ -37,12 +37,12 @@ var prevYear;
 function initialize() {
     console.log("Initializing Gopher...");
     if (typeof localStorage['gopherstate'] === 'undefined') {
-        state = [];
+        state = {};
     } else {
         state = JSON.parse(localStorage['gopherstate']);
     }
-    spells = [];
-    kingdoms = [];
+    spells = {};
+    kingdoms = {};
     
     currentSection = window.location.pathname.split("/")[2];
     currentPage = window.location.pathname.split("/")[3];
@@ -107,12 +107,11 @@ function insertGopherBox() {
  *   PAGE READ FUNCTIONS    *
  ****************************/
 
-function createChildArray(container, key) {
+function createChild(container, key) {
     if (typeof container[key] === 'undefined') {
-        container[key] = [];
+        container[key] = {};
     }
 }
-
 
 function loadState() {
     getContent("council_state", function(c) {
@@ -120,7 +119,7 @@ function loadState() {
         var statenumbers = c.children[2].children[1].children;
         var trendtable = c.children[4].children[1].children;
 
-        createChildArray(state,'info');
+        createChild(state,'info');
         state.info.pezzies = statenumbers[0].children[1].innerText;
         state.info.employed = statenumbers[0].children[3].innerText;
         state.info.nw = statenumbers[0].children[5].innerText;
@@ -141,33 +140,33 @@ function loadState() {
         console.log("Current date: " + currentMonth + " " + currentDay + ", YR" + currentYear);
         
         console.log(1);
-        createChildArray(state,'data');
+        createChild(state,'data');
         console.log(2);
-        createChildArray(state.data,currentYear);
+        createChild(state.data,currentYear);
         console.log(3);
-        createChildArray(state.data.currentYear,currentMonth);
+        createChild(state.data[currentYear],currentMonth);
         console.log(4);
-        createChildArray(state.data.currentYear.currentMonth,currentDay);
+        createChild(state.data[currentYear][currentMonth],currentDay);
         console.log(5);
-        createChildArray(state.data,prevYear);
+        createChild(state.data,prevYear);
         console.log(6);
-        createChildArray(state.data.prevYear,prevMonth);
+        createChild(state.data[prevYear],prevMonth);
         console.log(7);
-        createChildArray(state.data.prevYear.prevMonth,prevDay);
+        createChild(state.data[prevYear][prevMonth],prevDay);
 
-        state.data[prevYear][prevMonth][prevday]["income"] = trendtable[0].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["wages"] = trendtable[1].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["draft"] = trendtable[2].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["science"] = trendtable[3].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["netgc"] = trendtable[4].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["pezchg"] = trendtable[5].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["fg"] = trendtable[6].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["fn"] = trendtable[7].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["fd"] = trendtable[8].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["netfood"] = trendtable[9].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["rd"] = trendtable[11].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["rp"] = trendtable[10].children[1].innerText;
-        state.data[prevYear][prevMonth][prevday]["netrune"] = trendtable[12].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["income"] = trendtable[0].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["wages"] = trendtable[1].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["draft"] = trendtable[2].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["science"] = trendtable[3].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["netgc"] = trendtable[4].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["pezchg"] = trendtable[5].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["fg"] = trendtable[6].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["fn"] = trendtable[7].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["fd"] = trendtable[8].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["netfood"] = trendtable[9].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["rd"] = trendtable[11].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["rp"] = trendtable[10].children[1].innerText;
+        state.data[prevYear][prevMonth][prevDay]["netrune"] = trendtable[12].children[1].innerText;
 
         state.data[currentYear][currentMonth]["income"] = trendtable[0].children[2].innerText;
         state.data[currentYear][currentMonth]["wages"] = trendtable[1].children[2].innerText;
@@ -200,6 +199,7 @@ function loadState() {
         localStorage['gopherState'] = JSON.stringify(state);
     });
 }
+
 
 function loadSpells() {
     getContent("council_spells", function(c) {
@@ -326,6 +326,8 @@ function getPageName(page) {
     names.send_armies = "War room";
     names.province_target_finder = "Potential targets";
     names.aid = "Send aid";
+    names.fund_dragon = "Fund dragon";
+    names.attack_dragon = "Attack dragon";
     names.vote = "Vote";
     names.war = "War";
     names.nap = "Ceasefire";
