@@ -2,7 +2,7 @@
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
 // @require http://code.jquery.com/jquery-latest.js
-// @version	0.0.5a
+// @version	0.0.6a
 // @description	Auto-join script for 2015 Summer Steam Monster Minigame
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
@@ -36,18 +36,14 @@ var prevYear;
 
 function initialize() {
     console.log("Initializing Gopher");
-    if (typeof localStorage['gopherstate'] === 'undefined') {
-        state = {};
-    } else {
-        state = JSON.parse(localStorage['gopherstate']);
-    }
-    createChild(state,'info');
-    createChild(state,'data');
+    loadState();
     spells = {};
     kingdoms = {};
-    
+
     currentSection = window.location.pathname.split("/")[2];
     currentPage = window.location.pathname.split("/")[3];
+
+    state.data.resbar = $("#resource-bar")[0];
     setCurrentDate($("div.current-date")[0].innerText);
 }
 
@@ -107,27 +103,24 @@ function loadNews() {
 
         // clear the queue of existing news reports and repopulate the year
         
-        //TODO:: THIS DOESN'T WORK WITH BACKGROUND LOADING
-        var navtext = $(".next-prev-nav").text().trim();
+        var navtext = page.getElementsByClassName("next-prev-nav")[0].innerText.trim();
         if (navtext.search("<") === 0) {  // remove the "prev" link text
             navtext = navtext.substr(navtext.search("Edition")+8).trim();
         }
         navtext = navtext.substr(0,navtext.search("Edition")).trim();
-        var d = parseUtoDate(navtext);
-        createChild(state.data,d[2]);
-        createChild(state.data[d[2]],d[0]);
-        state.data[d[2]][d[0]] = {};
+        createDataEntry(parseUtoDate(navtext));
 
         // read in news entries
         for (var i; i < newsdates.length; i++) {
             var d = parseUtoDate(newsdates[i].innerText.trim());
             createDataEntry(d);
+            createChild(state.data[d[2]][d[0]][d[1]],"news");
             var report = newsreports[i].innerText.trim();
+            console.log(d + ":" + report);
+            state.data[d[2]][d[0]][d[1]].news
         }
     });
 }
-
-
 
 function loadState() {
     getContent("council_state", function(c) {
@@ -199,7 +192,7 @@ function loadState() {
         state.data[prevYear][prevMonth]["rd"] = trendtable[11].children[3].innerText;
         state.data[prevYear][prevMonth]["netrune"] = trendtable[12].children[3].innerText;
         
-        localStorage['gopherState'] = JSON.stringify(state);
+        saveState();
     });
 }
 
@@ -257,10 +250,10 @@ function logKingdom(k, i) {
 
 function dateChange(oldDate) {
     //! TODO: Update on-screen elements (date, header) after tick
-    $(".current-date")[0].innerText = currentDate[0] +" "+ currentDate[1] +" "+ currentDate[2];
+    $(".current-date")[0].innerText = currentDate;
     $(".current-date")[0].className += " updated";
     setResBar();
-    console.log("Date changed from " + oldDate[0] +" "+ oldDate[1] +" "+ oldDate[2] + " to " + currentDate[0] +" "+ currentDate[1] +" "+ currentDate[2]);
+    console.log("Date changed from " + oldDate + " to " + currentDate);
 }
 
 function setResBar() {
@@ -279,11 +272,12 @@ function setResBar() {
 
 function setCurrentDate(dateString) {
     var oldDate = currentDate;
-    var currentDate = parseUtoDate(dateString);
+    currentDate = dateString;
+    var d = parseUtoDate(dateString);
     
-    currentMonth = currentDate[0];
-    currentDay = currentDate[1];
-    currentYear = currentDate[2];
+    currentMonth = d[0];
+    currentDay = d[1];
+    currentYear = d[2];
 
     prevDay = currentDay - 1;
     prevMonth = currentMonth;
@@ -326,16 +320,18 @@ function parseContent(doc, cfunc) {
 
     // While we're pulling a new page, may as well check the date and resources
     state.data.resbar = page.getElementsByTagName("table")["resource-bar"];
+    setResBar();
     setCurrentDate(page.getElementsByClassName("current-date")[0].innerText);
 
+    cfunc(content);
 }
 
-function getContent(page, cfunc) {
-    if (page === currentPage) {
-        console.log(getPageName(page) + " page is already loaded");
+function getContent(pageName, cfunc) {
+    if (pageName === currentPage) {
+        console.log(getPageTitle(pageName) + " page is already loaded");
         parseContent(document.documentElement.innerHTML, cfunc);
     } else {
-        var url = "/wol/game/" + page + "/";
+        var url = "/wol/game/" + pageName + "/";
         loadXMLDoc(url, function() {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 doc = xmlhttp.responseText;
@@ -392,13 +388,15 @@ function createDataEntry(d) {
     // d is date array in form [m, d, y]
     createChild(state.data,d[2]);
     createChild(state.data[d[2]],d[0]);
-    createChild(state.data[d[2]][d[0]],d[1]);
+    if (d[1] >= 0) {
+        createChild(state.data[d[2]][d[0]],d[1]);
+    }
 }
 
 /**************************** 
  *      INFO FUNCTIONS      *
  ****************************/
-function getPageName(page) {
+function getPageTitle(pageName) {
     var names = [];
     names.throne = "Throne";
     names.council_state = "Affairs of the State";
@@ -437,13 +435,26 @@ function getPageName(page) {
     names.sitting = "Province sitting";
 //    names. = "Abandon province";
 //    names. = "Random move";
-    return names[page];
+    return names[pageName];
 }
 
 function getResName(i) {
     return ["money", "peasants", "food", "runes", "nw", "land", "nwpa"][i];
 }
 
+function saveState() {
+    localStorage['gopherState'] = JSON.stringify(state);
+}
+
+function loadState() {
+    if (typeof localStorage['gopherstate'] === 'undefined') {
+        state = {};
+    } else {
+        state = JSON.parse(localStorage['gopherstate']);
+    }
+    createChild(state,'info');
+    createChild(state,'data');
+}
 
 // Why wait for the page to finish loading crap?
 insertGopherBox();
