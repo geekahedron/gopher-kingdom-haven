@@ -2,7 +2,7 @@
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
 // @require http://code.jquery.com/jquery-latest.js
-// @version	0.0.6a
+// @version	0.0.7a
 // @description	Auto-join script for 2015 Summer Steam Monster Minigame
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
@@ -17,7 +17,15 @@ window.onload = function() {
 
 $(document).ready(function() {
     console.log("document ready");
-    initialize();
+    initializeGopher();
+
+    function updateGopher() {
+        console.log("Checking for updates...");
+        loadSpells();
+        loadNews();
+    }
+
+    setInterval(updateGopher,60000);
 });
 
 var xmlhttp;
@@ -34,7 +42,7 @@ var prevDay;
 var prevMonth;
 var prevYear;
 
-function initialize() {
+function initializeGopher() {
     console.log("Initializing Gopher");
     loadState();
     spells = {};
@@ -46,6 +54,8 @@ function initialize() {
     state.data.resbar = $("#resource-bar")[0];
     setCurrentDate($("div.current-date")[0].innerText);
 }
+
+
 
 /**************************** 
  *    PAGE MANIPULATION     *
@@ -82,13 +92,20 @@ function insertGopherBox() {
     addGlobalStyle("#gopherbox { border: 2px solid #3B4041; }");
     addGlobalStyle("#gopherbox { min-height: 300px; }");
     addGlobalStyle("#gopherbox h2 { text-align: center; }");
+    addGlobalStyle(".updated { color: #CFC; }");
     var gopherbox = document.createElement("div");
     gopherbox.id = "gopherbox";
     gopherbox.className = "gopherbox";
     var pagetitle = document.createElement("h2");
     pagetitle.id = "gophertitle";
     pagetitle.innerHTML = "Gopher";
+    var spellbox = document.createElement("div");
+    spellbox.id = "spellbox";
+    var newsbox = document.createElement("div");
+    newsbox.id = "newsbox";
     gopherbox.appendChild(pagetitle);
+    gopherbox.appendChild(spellbox);
+    gopherbox.appendChild(newsbox);
     $("div#right-column")[0].appendChild(gopherbox);
 }
 
@@ -97,27 +114,44 @@ function insertGopherBox() {
  ****************************/
 
 function loadNews() {
-    getContent("province_news", function(c) {
-        var newsdates = content.getElementsByClassName("news-incident-date");
-        var newsreports = content.getElementsByClassName("news-incident-report");
-
-        // clear the queue of existing news reports and repopulate the year
+    getPage("province_news", function(page) {
+        var newsdates = page.getElementsByClassName("news-incident-date");
+        var newsreports = page.getElementsByClassName("news-incident-report");
         
+        // clear the queue of existing news reports and repopulate the year
+       
         var navtext = page.getElementsByClassName("next-prev-nav")[0].innerText.trim();
         if (navtext.search("<") === 0) {  // remove the "prev" link text
             navtext = navtext.substr(navtext.search("Edition")+8).trim();
         }
         navtext = navtext.substr(0,navtext.search("Edition")).trim();
-        createDataEntry(parseUtoDate(navtext));
+        var d = parseUtoDate(navtext);
+        createDataEntry(d);
 
-        // read in news entries
-        for (var i; i < newsdates.length; i++) {
-            var d = parseUtoDate(newsdates[i].innerText.trim());
-            createDataEntry(d);
-            createChild(state.data[d[2]][d[0]][d[1]],"news");
-            var report = newsreports[i].innerText.trim();
-            console.log(d + ":" + report);
-            state.data[d[2]][d[0]][d[1]].news
+        // Check for updated entries this year
+        if (state.data[d[2]][d[0]].newsentries === undefined || newsdates.length !== state.data[d[2]][d[0]].newsentries) {
+            state.data[d[2]][d[0]].newsentries = newsdates.length;
+
+            // clear existing display
+            $("#newsbox").html('')
+            
+            // read in news entries
+            for (var i = newsdates.length-1; i >= 0; i--) {
+                //            console.log(i + newsdates[i] + newsreports[i]);
+                var d = parseUtoDate(newsdates[i].innerText.trim());
+                createDataEntry(d);
+                createChild(state.data[d[2]][d[0]][d[1]],"news",[]);
+                var report = newsreports[i].innerText.trim();
+                console.log(d + ":" + report);
+                state.data[d[2]][d[0]][d[1]].news = report;
+                var ns = document.createElement("span");
+                ns.className = "ghk-news";
+                ns.innerText = printUtoDate(d) + ": " + report;
+                //TODO:: Format output
+                $("#newsbox").append(ns);
+            }
+        } else {
+            console.log("No new news");
         }
     });
 }
@@ -200,6 +234,7 @@ function loadState() {
 function loadSpells() {
     getContent("council_spells", function(c) {
         content = c;
+        $("#spellbox").html('');
         var spelltable = c.getElementsByTagName("table")[0].getElementsByTagName("tbody")[0].children;
         for (var i = 0; i < spelltable.length; i++) {
             var spellrow = spelltable[i];
@@ -209,6 +244,11 @@ function loadSpells() {
             var description = spellrow.children[2].innerText.trim();
             //! TODO::Display results on page
             console.log(spellname + " (" + spelltype + ") " + duration + " [" + description + "]");
+            var spell = document.createElement("span");
+            spell.classList.add("ghk-spell");
+            spell.classList.add("spelltype");
+            spell.innerText = spellname + " (" + duration + ") ";
+            $("#spellbox").append(spell);
         }
     });
 }
@@ -257,7 +297,7 @@ function dateChange(oldDate) {
 }
 
 function setResBar() {
-    var res = state.data.resbar.children[1].children[0].children;
+    var res = state.data.resbar.children[1].children[state.data.resbar.children[1].children.length-1].children; // grab the correct row after spending resources
     var bar = $("#resource-bar tbody th");
     for (var i = 0; i < res.length; i++) {
         var val = res[i].innerText;
@@ -290,7 +330,7 @@ function setCurrentDate(dateString) {
         prevMonth = 7;
         prevYear -= 1;
     }
-    if (JSON.stringify(oldDate) !== JSON.stringify(currentDate)) {
+    if ((typeof oldDate !== 'undefined') && (JSON.stringify(oldDate) !== JSON.stringify(currentDate))) {
         dateChange(oldDate);
     }
     createDataEntry(currentDate);
@@ -312,6 +352,19 @@ function loadXMLDoc(url,cfunc)
     xmlhttp.send();
 }
 
+function parsePage(doc, cfunc) {
+    console.log("parsing page");
+    var htmlparse = new DOMParser();
+    var page = htmlparse.parseFromString(doc,"text/html").firstElementChild;
+
+    // While we're pulling a new page, may as well check the date and resources
+    state.data.resbar = page.getElementsByTagName("table")["resource-bar"];
+    setResBar();
+    setCurrentDate(page.getElementsByClassName("current-date")[0].innerText);
+
+    cfunc(page);
+}
+
 function parseContent(doc, cfunc) {
     console.log("parsing page");
     var htmlparse = new DOMParser();
@@ -324,6 +377,21 @@ function parseContent(doc, cfunc) {
     setCurrentDate(page.getElementsByClassName("current-date")[0].innerText);
 
     cfunc(content);
+}
+
+function getPage(pageName, cfunc) {
+    if (pageName === currentPage) {
+        console.log(getPageTitle(pageName) + " page is already loaded");
+        parseContent(document.documentElement.innerHTML, cfunc);
+    } else {
+        var url = "/wol/game/" + pageName + "/";
+        loadXMLDoc(url, function() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                doc = xmlhttp.responseText;
+                parsePage(xmlhttp.responseText, cfunc);
+            }
+        });
+    }
 }
 
 function getContent(pageName, cfunc) {
@@ -344,9 +412,9 @@ function getContent(pageName, cfunc) {
 /**************************** 
  *    UTILITY FUNCTIONS     *
  ****************************/
-function createChild(container, key) {
+function createChild(container, key, value) {
     if (typeof container[key] === 'undefined') {
-        container[key] = {};
+        container[key] = (typeof value === 'undefined' ? {} : value);
     }
 }
 
@@ -362,26 +430,6 @@ function addGlobalStyle(css) {
 
 function num(str) {
     return Number(str.replace(/[^\d\.\-\ ]/g, ''));
-}
-
-function parseUtoDate(str) {
-    var d = str.split(" ");
-    var r = [];
-    if (d.length === 2) { // "March YR1"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
-        r[1] = -1;
-        r[2] = Number(d[1].substr(2));
-    }
-    if (d.length === 3) { // "May 3, YR2"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
-        r[1] = Number(d[1].split(",")[0]);
-        r[2] = Number(d[2].substr(2));
-    } else if (d.length === 4) { // "May 4 of YR0"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2012")).getMonth()+1;
-        r[1] = Number(d[1].split(",")[0]);
-        r[2] = Number(d[3].substr(2));
-    }
-    return r;
 }
 
 function createDataEntry(d) {
@@ -454,6 +502,35 @@ function loadState() {
     }
     createChild(state,'info');
     createChild(state,'data');
+}
+
+function parseUtoDate(str) {
+    var d = str.split(" ");
+    var r = [];
+    if (d.length === 2) { // "March YR1"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[1] = -1;
+        r[2] = Number(d[1].substr(2));
+    }
+    if (d.length === 3) { // "May 3, YR2"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[1] = Number(d[1].split(",")[0]);
+        r[2] = Number(d[2].substr(2));
+    } else if (d.length === 4) { // "May 4 of YR0"
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[1] = Number(d[1].split(",")[0]);
+        r[2] = Number(d[3].substr(2));
+    }
+    return r;
+}
+
+function printUtoDate(d) {
+    var m = ["January", "February", "March", "April", "May", "June", "July"];
+    if (d[1] === -1) {
+        return m[d[0]] + " YR" + d[2];
+    } else {
+        return m[d[0]] + " " + d[1] + ", YR" + d[2];
+    }
 }
 
 // Why wait for the page to finish loading crap?
