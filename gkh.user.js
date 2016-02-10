@@ -508,16 +508,16 @@ function parseUtoDate(str) {
     var d = str.split(" ");
     var r = [];
     if (d.length === 2) { // "March YR1"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth();
         r[1] = -1;
         r[2] = Number(d[1].substr(2));
     }
     if (d.length === 3) { // "May 3, YR2"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth();
         r[1] = Number(d[1].split(",")[0]);
         r[2] = Number(d[2].substr(2));
     } else if (d.length === 4) { // "May 4 of YR0"
-        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth()+1;
+        r[0] = new Date(Date.parse(d[0] +" 1, 2015")).getMonth();
         r[1] = Number(d[1].split(",")[0]);
         r[2] = Number(d[3].substr(2));
     }
