@@ -2,7 +2,7 @@
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
 // @require http://code.jquery.com/jquery-latest.js
-// @version	0.0.7a
+// @version	0.0.8a
 // @description	Auto-join script for 2015 Summer Steam Monster Minigame
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
