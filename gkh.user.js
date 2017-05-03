@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name	GKH for Utopia
-// @namespace	https://github.com/geekahedron/gopher-kingdom-haven/
+// @namespace	https://github.com/geekahedron/gopher-kingdom-helper/
 // @require http://code.jquery.com/jquery-latest.js
 // @version	0.0.8a
 // @description	Information sie bar for utopia-game.com
