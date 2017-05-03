@@ -6,8 +6,8 @@
 // @description	Information sie bar for utopia-game.com
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
-// @updateURL   https://github.com/geekahedron/gopher-kingdom-haven/raw/master/gkh.user.js
-// @downloadURL https://github.com/geekahedron/gopher-kingdom-haven/raw/master/gkh.user.js
+// @updateURL   https://github.com/geekahedron/gopher-kingdom-helper/raw/master/gkh.user.js
+// @downloadURL https://github.com/geekahedron/gopher-kingdom-helper/raw/master/gkh.user.js
 // @grant	none
 // ==/UserScript==
 
