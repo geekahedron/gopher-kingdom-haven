@@ -2,7 +2,7 @@
 // @name	GKH for Utopia
 // @namespace	https://github.com/geekahedron/gopher-kingdom-helper/
 // @require http://code.jquery.com/jquery-latest.js
-// @version	0.0.8a
+// @version	0.0.8b
 // @description	Information sie bar for utopia-game.com
 // @author	geekahedron
 // @match       http://utopia-game.com/wol/*
@@ -21,11 +21,11 @@ $(document).ready(function() {
 
     function updateGopher() {
         console.log("Checking for updates...");
-        loadSpells();
+//        loadSpells();
         loadNews();
     }
 
-    setInterval(updateGopher,60000);
+    setInterval(updateGopher,200000);   // refresh every 5 minutes
 });
 
 var xmlhttp;
