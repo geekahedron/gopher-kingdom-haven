@@ -86,7 +86,7 @@ function showWanted() {
 }
 
 function insertGopherBox() {
-    removeAds();
+//    removeAds();
     addGlobalStyle("#right-column { float: left; }");
     addGlobalStyle("#right-column { width: 168px; }");
     addGlobalStyle("#gopherbox { border: 2px solid #3B4041; }");
@@ -106,7 +106,7 @@ function insertGopherBox() {
     gopherbox.appendChild(pagetitle);
     gopherbox.appendChild(spellbox);
     gopherbox.appendChild(newsbox);
-    $("div#right-column")[0].appendChild(gopherbox);
+    $("div#right-column")[0].prepend(gopherbox);
 }
 
 /**************************** 
