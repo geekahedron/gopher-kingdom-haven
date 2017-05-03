@@ -149,6 +149,7 @@ function loadNews() {
                 ns.innerText = printUtoDate(d) + ": " + report;
                 //TODO:: Format output
                 $("#newsbox").append(ns);
+                $("#newsbox").append("<br />");
             }
         } else {
             console.log("No new news");
@@ -249,6 +250,7 @@ function loadSpells() {
             spell.classList.add("spelltype");
             spell.innerText = spellname + " (" + duration + ") ";
             $("#spellbox").append(spell);
+            $("#spellbox").append("<br />");
         }
     });
 }
