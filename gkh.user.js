@@ -5,7 +5,7 @@
 // @version	0.0.8b
 // @description	Information sie bar for utopia-game.com
 // @author	geekahedron
-// @match       http://utopia-game.com/wol/*
+// @match       https://utopia-game.com/wol/*
 // @updateURL   https://github.com/geekahedron/gopher-kingdom-helper/raw/master/gkh.user.js
 // @downloadURL https://github.com/geekahedron/gopher-kingdom-helper/raw/master/gkh.user.js
 // @grant	none
